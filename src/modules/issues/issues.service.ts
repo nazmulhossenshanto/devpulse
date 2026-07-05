@@ -18,7 +18,60 @@ const result = await pool.query(`
 
 };
 
-const getAllIssuesFromDB = async (payload: any)=>{
+const getAllIssuesFromDB = async (query: any)=>{
+    const {sort, type, status} = query;
+    let sql = `SELECT id, title, description, type, status, reporter_id, created_at, updated_at FROM issues`;
+    const conditions: string[]  = [];
+    const values: string[] = [];
+    if(type){
+        values.push(type);
+        conditions.push(`
+            type=$${values.length}`
+        );
+
+    };
+
+    if (status) {
+
+  values.push(status);
+
+  conditions.push(
+    `status=$${values.length}`
+  );
+
+};
+
+if (conditions.length > 0) {
+
+  sql += `
+    WHERE
+    ${conditions.join(" AND ")}
+  `;
+
+};
+
+if (sort === "oldest") {
+
+  sql += `
+    ORDER BY created_at ASC
+  `;
+
+} else {
+
+  sql += `
+    ORDER BY created_at DESC
+  `;
+
+};
+
+const result =
+await pool.query(
+sql,
+values
+);
+
+return result.rows;
+
 
 }
 
