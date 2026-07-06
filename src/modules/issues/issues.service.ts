@@ -86,7 +86,6 @@ const getSingleIssueFromDB = async (id: number) => {
 
   const issue = issueResult.rows[0];
 
- 
   const reporterResult = await pool.query(
     `
     SELECT
@@ -125,9 +124,8 @@ const getSingleIssueFromDB = async (id: number) => {
 const updateIssueIntoDB = async (
   id: number,
   payLoad: IUpdateIssue,
-  user: JwtPayload
+  user: JwtPayload,
 ) => {
-
   const { title, description, type } = payLoad;
 
   // ==========================
@@ -142,11 +140,7 @@ const updateIssueIntoDB = async (
     throw new Error("Description minimum length is 20 characters");
   }
 
-  if (
-    type &&
-    type !== "bug" &&
-    type !== "feature_request"
-  ) {
+  if (type && type !== "bug" && type !== "feature_request") {
     throw new Error("Invalid issue type");
   }
 
@@ -168,7 +162,7 @@ const updateIssueIntoDB = async (
     FROM issues
     WHERE id = $1
     `,
-    [id]
+    [id],
   );
 
   if (issueResult.rows.length === 0) {
@@ -178,7 +172,6 @@ const updateIssueIntoDB = async (
   const issue = issueResult.rows[0];
 
   if (user.role === "contributor") {
-
     if (issue.reporter_id !== user.id) {
       throw new Error("You are not allowed to update this issue");
     }
@@ -186,9 +179,7 @@ const updateIssueIntoDB = async (
     if (issue.status !== "open") {
       throw new Error("Only open issues can be updated");
     }
-
   }
-
 
   const result = await pool.query(
     `
@@ -209,28 +200,40 @@ const updateIssueIntoDB = async (
       created_at,
       updated_at
     `,
-    [
-      title ?? null,
-      description ?? null,
-      type ?? null,
-      id,
-    ]
+    [title ?? null, description ?? null, type ?? null, id],
   );
 
   return result.rows[0];
-
 };
 
-const deleteIssueFromDB = async()=>{
+const deleteIssueFromDB = async (id: number) => {
+  const issueResult = await pool.query(
+    `
+    SELECT id
+    FROM issues
+    WHERE id = $1
+    `,
+    [id],
+  );
 
-}
+  if (issueResult.rows.length === 0) {
+    throw new Error("Issue not found");
+  }
 
 
+  await pool.query(
+    `
+    DELETE FROM issues
+    WHERE id = $1
+    `,
+    [id],
+  );
+};
 
 export const issueService = {
   createIssueIntoDB,
   getAllIssuesFromDB,
   getSingleIssueFromDB,
   updateIssueIntoDB,
-  deleteIssueFromDB
+  deleteIssueFromDB,
 };
