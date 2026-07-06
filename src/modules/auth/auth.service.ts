@@ -55,6 +55,8 @@ const result = await pool.query(`
 
   const token = jwt.sign(jwtPayload, config.jwt_access_secret, {expiresIn: config.jwt_access_expires_in});
 
+  delete user.password;
+
   return {
   token,
   user: {
