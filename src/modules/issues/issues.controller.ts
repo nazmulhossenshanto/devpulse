@@ -52,9 +52,31 @@ const getSingleIssue= catchAsync(async(req:Request, res:Response)=>{
     );
 })
 
+const updateIssue = catchAsync(async(req: Request, res: Response)=>{
+  const id = Number(req.params.id);
+  const user = req.user!;
+  const result = await issueService.updateIssueIntoDB(id, req.body, user);
+
+  sendResponse(
+      res,
+     
+      {
+        statusCode:  httpStatus.OK,
+        success: true,
+        message: "Issue updated successfully",
+        data: result,
+      }
+    );
+});
+
+const deleteIssue = catchAsync(async(req:Request, res:Response)=>{
+
+})
 
 export const issueController = {
     createIssue,
     getAllIssues,
-    getSingleIssue
+    getSingleIssue,
+    updateIssue,
+    deleteIssue
 }

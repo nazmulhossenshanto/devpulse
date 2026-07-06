@@ -8,6 +8,9 @@ router.post('/', auth, checkRole("contributor", "maintainer"), issueController.c
 
 router.get('/', issueController.getAllIssues);
 router.get('/:id', issueController.getSingleIssue);
+router.patch('/:id', auth,
+  checkRole("contributor", "maintainer"), issueController.updateIssue);
+  router.delete('/:id', issueController.deleteIssue);
 
 
 

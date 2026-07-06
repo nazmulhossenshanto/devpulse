@@ -1,6 +1,6 @@
 import { pool } from "../../db/index.js";
-import type { ICreateIssue, IssueQuery } from "./issues.types.js";
-
+import type { ICreateIssue, IssueQuery, IUpdateIssue } from "./issues.types.js";
+import type { JwtPayload } from "jsonwebtoken";
 const createIssueIntoDB = async (payLoad: ICreateIssue, reporterId: number) => {
   const { title, description, type } = payLoad;
   if (title.length > 150) {
@@ -122,8 +122,115 @@ const getSingleIssueFromDB = async (id: number) => {
   };
 };
 
+const updateIssueIntoDB = async (
+  id: number,
+  payLoad: IUpdateIssue,
+  user: JwtPayload
+) => {
+
+  const { title, description, type } = payLoad;
+
+  // ==========================
+  // Validation
+  // ==========================
+
+  if (title && title.length > 150) {
+    throw new Error("Title maximum length is 150");
+  }
+
+  if (description && description.length < 20) {
+    throw new Error("Description minimum length is 20 characters");
+  }
+
+  if (
+    type &&
+    type !== "bug" &&
+    type !== "feature_request"
+  ) {
+    throw new Error("Invalid issue type");
+  }
+
+  // ==========================
+  // Find Issue
+  // ==========================
+
+  const issueResult = await pool.query(
+    `
+    SELECT
+      id,
+      title,
+      description,
+      type,
+      status,
+      reporter_id,
+      created_at,
+      updated_at
+    FROM issues
+    WHERE id = $1
+    `,
+    [id]
+  );
+
+  if (issueResult.rows.length === 0) {
+    throw new Error("Issue not found");
+  }
+
+  const issue = issueResult.rows[0];
+
+  if (user.role === "contributor") {
+
+    if (issue.reporter_id !== user.id) {
+      throw new Error("You are not allowed to update this issue");
+    }
+
+    if (issue.status !== "open") {
+      throw new Error("Only open issues can be updated");
+    }
+
+  }
+
+
+  const result = await pool.query(
+    `
+    UPDATE issues
+    SET
+      title = COALESCE($1, title),
+      description = COALESCE($2, description),
+      type = COALESCE($3, type),
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = $4
+    RETURNING
+      id,
+      title,
+      description,
+      type,
+      status,
+      reporter_id,
+      created_at,
+      updated_at
+    `,
+    [
+      title ?? null,
+      description ?? null,
+      type ?? null,
+      id,
+    ]
+  );
+
+  return result.rows[0];
+
+};
+
+const deleteIssueFromDB = async()=>{
+
+}
+
+
+
 export const issueService = {
   createIssueIntoDB,
   getAllIssuesFromDB,
   getSingleIssueFromDB,
+  updateIssueIntoDB,
+  deleteIssueFromDB
 };
